@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <script>
+        	window.onload = function(){
+        		
+	        	var localS = window.localStorage;
+        		//先初始化各个点的x,y坐标
+        		function InitPoint(){
+        			var startX = 200;
+	        		var startY = 100;
+	        		for(var i = 0; i < 3; i++)
+	        			for(var j = 0; j < 3; j++)
+		        		{
+		        			var x = startX + j * 2 * r + (j + 1) * d + r;
+		        			var y = startY + i * 2 * r + (i + 1) * d + r;
+		        			pointArr.push({
+		        				x : x,
+		        				y : y,
+		        				id : 3 * i + j,
+		        				visited : false
+		        			});
+		        		}
+        		}
+        		
+        		function DrawCirclePanel(pointArr){
+        			//将数组中的点绘制出来
+        			ctx.fillStyle = "white";
+        			ctx.strokeStyle = "black";
+        			for(var num = 0; num < pointArr.length; num++)
+	        		{
+	        			ctx.beginPath();
+	        			ctx.arc(pointArr[num].x, pointArr[num].y, r, 0, 2 * Math.PI, false);
+	        			ctx.closePath();
+	        			ctx.fill();
+	        			ctx.strokeStyle = "rgba(10, 255, 25, 1)";
+	        			ctx.stroke();
+	        		}
+        		}
+        		
+        		//为每个点着色
+        		function DrawColor(x, y){
+        			ctx.beginPath();
+        			ctx.fillStyle = "rgba(255, 100, 255, 0.3)";
+        			ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+        			ctx.closePath();
+        			ctx.fill();
+        		}
+
+        		function DrawLine(startPoint, endPoint){
+        			var startX = startPoint.x;
+        			var startY = startPoint.y;
+        			var endX = endPoint.x;
+        			var endY = endPoint.y;
+        			ctx.beginPath();
+		        	ctx.moveTo(startX, startY);
+		        	ctx.lineTo(endX, endY);
+		        	ctx.lineWidth = 3;
+		        	ctx.stroke();
+		        	ctx.closePath();
+        		}
+        		//
+        		//Count = 1;           //这里为了定义何时是第二次触发touchStart事件,使用了Count变量
+        		var handlerStart = function(e){
+        			if(Count >= 2)
+        			{
+        				ctx.clearRect(0, 0, 1200, 1200);
+        				//把颜色都设为white,然后去填充和描边;
+	        			DrawCirclePanel(pointArr);
+
+	        			for(var i = 0; i < pointArr.length; i++)
+	        			{
+	        				pointArr[i].visited = false;
+	        			}
+
+	        			/*LineArr = [];*/        //不在start事件去清空LineArr,因为touchend事件还需要访问LineArr;可以考虑在end事件时清空LineArr;
+        			}
+        			//判断触摸点是9个点中哪一个点
+        			for(var num = 0; num< pointArr.length; num++)
+        			{
+        				var CurrX = e.touches[0].clientX - pointArr[num].x;
+        				var CurrY = e.touches[0].clientY - pointArr[num].y;
+        				var dis = Math.pow((Math.pow(CurrX, 2) + Math.pow( CurrY, 2)), 0.5);
+        				/*console.log(dis);*/
+        				if(dis <= r)
+        				{
+        					//console.log(pointArr[num].id);
+        					//对这个点着色
+        					DrawColor(pointArr[num].x, pointArr[num].y);
+        					//LineArr.push(pointArr[num]);
+        					break;
+        				}
+
+        			}
+
+        			//Count++;             //也不在Start事件中加Count,放到end事件中去
+        		}
+        		var handlerMove = function(e){
+        			//移动坐标时；
+        			//console.log(e.touches[0]);
+					e.preventDefault();
+					var CurrX;
+					var CurrY;
+					var dis;
+        			for(var num = 0; num< pointArr.length; num++)
+        			{
+        				if(pointArr[num].visited == false)
+        				{
+        					CurrX = e.touches[0].clientX - pointArr[num].x;
+	        				CurrY = e.touches[0].clientY - pointArr[num].y;
+	        				dis = Math.pow((Math.pow(CurrX, 2) + Math.pow( CurrY, 2)), 0.5);
+	        				/*console.log(dis);*/
+	        				if(dis <= r)
+	        				{
+	        					pointArr[num].visited = true;
+	        					//console.log(pointArr[num].id);
+	        					//对这个点着色
+	        					DrawColor(pointArr[num].x, pointArr[num].y);
+	        					//还要划线;需要知道前后的点的坐标；可以考虑这样来做：
+	        					//即把划到的那些点都push进一个数组里，然后只需沿着数组中这些点的坐标画线就可以
+	        					LineArr.push(pointArr[num]);
+	        					/*console.log(LineArr.length);*/
+	        					//DrawLine(LineArr);
+	        					//break;           //因为加break的缘故,导致num在等于8之后就跳出了?
+	        				}
+	        				
+	        				if(LineArr.length > 1)
+	        				{
+	        					//console.log("length = " + LineArr.length);
+		        				var len = LineArr.length;
+		        				
+		        				ctx.strokeStyle = "rgba(255,255,10, 0.8)";
+		        				DrawLine(LineArr[len - 2], LineArr[len - 1]);
+	        				}
+        				}
+        				else   //回退一个点时
+        				{
+        					/*CurrX = e.touches[0].clientX - pointArr[num].x;
+	        				CurrY = e.touches[0].clientY - pointArr[num].y;
+	        				dis = Math.pow((Math.pow(CurrX, 2) + Math.pow( CurrY, 2)), 0.5);
+        					if( dis <= r && LineArr.length >= 2)
+        					{
+        						//console.log(LineArr.length);
+        						for(var i = 0; i < LineArr.length; i++)
+        						{
+        							if(pointArr[num].id == LineArr[LineArr.length - 2].id)
+        							{
+        								
+        								//就把LineArr最后一个元素pop出去,之后重新绘制线,并且把该点的visited设为false
+        								//
+        								var length = LineArr.length;
+        								ctx.beginPath();
+		        						ctx.moveTo(LineArr[length - 1].x, LineArr[length - 1].y);
+		        						ctx.lineTo(LineArr[length - 2].x, LineArr[length - 2].y);
+		        						ctx.strokeStyle = "white";
+		        						ctx.stroke();
+		        						ctx.closePath();
+
+        								LineArr.pop();
+        								pointArr[num].visited = false;
+        								console.log('回退之后:'+ LineArr.length);
+        								console.log(LineArr.length);
+		        						
+        								break;
+        							}
+        						}
+
+        					}*/
+        				}        				
+        			}
+        		}
+        		var handlerEnd = function(e){
+        			//console.log(LineArr.length);
+        			/*if(LineArr.length == 9)
+        			{
+		        		DrawLine(LineArr[7], LineArr[8]);
+        			}*/
+        			console.log(Count);
+
+        			if(setLock)
+        			{
+	        				localS.setItem('result', JSON.stringify(LineArr));     //localStorage 只能保存字符串
+	        				alert("密码设置成功!");
+	        				setLock = false;
+	        				alert("请解锁！");
+        			}
+        			else
+        			{
+        				var getStorage = localS.getItem("result");       //localStorage 只能保存字符串,因此取出来也只能是字符串格式,因此将其转换为JSON格式
+
+	        			var res = JSON.parse(getStorage);
+	        			/*console.log(getStorage.length);
+	        			console.log(res.length);
+	        			console.log(LineArr.length);*/
+	        			if(res.length != LineArr.length)
+	        			{
+	        				/*console.log('两次输入的密码长度不一致,请重新输入!');*/
+	        				alert('两次输入的密码长度不一致,请重新解锁!');
+	        				setLock = false;
+	        			}
+	        			else
+	        			{
+	        				for(var i = 0; i < LineArr.length; i++)
+	        				{
+	        					if(res[i].id != LineArr[i].id)
+	        					{
+	        						/*console.log("两次输入的密码不一致,请重新输入!");*/
+	        						alert("两次输入的密码不一致,请重新解锁!");
+	        						break;
+	        						setLock = false;
+	        					}
+	        				}
+	        				if(i == LineArr.length)
+	        				{
+	        					/*console.log("密码确认成功!");*/
+	        					alert("解锁成功!");
+	        					setLock = true;
+	        					alert("可重新绘制手势密码!");
+	        				}
+	        			}
+        			}
+
+        			LineArr = [];
+	        		Count++;
+        		}
+
+        		function start(){
+        			alert("请绘制手势密码!");
+        			InitPoint();
+        			DrawCirclePanel(pointArr);
+        			canvas.addEventListener( 'touchstart', handlerStart, false);
+	        		canvas.addEventListener( 'touchmove',  handlerMove, false);
+	        		canvas.addEventListener( 'touchend', handlerEnd, false);
+        		}
+
+        		var canvas = document.getElementById('canvas');
+        		var ctx = canvas.getContext("2d");
+
+        		var pointArr = [];
+        		var LineArr = [];
+        		var r = 80;          //圆的半径
+	        	var d = 100;          //圆与圆之间的距离
+
+	        	Count = 1;           //这里为了定义何时是第二次触发touchStart事件,使用了Count变量
+
+	        	var setLock = true;
+
+        		start();
+        	}
+        </script>
+    </head>
+    <body>
+    	<canvas id="canvas" height="1200" width="1200"></canvas>
+    </body>
+</html>
+
+
+<!-- 仍存在的问题：
+当点击最后一个点时，不是先画线，而是先把最后一个点染色，当触发触摸end事件之后，才画出最后一条线；
+
+这是因为我把画最后一条线的操作写在了touchend事件中。为什么写在touchend事件中，是因为在touchmove事件时画线，最后一个点的线始终没有画出来；
+
+后面得调一下，感觉还是不能放到end事件里面;
+
+已解决;
+
+第二次start时,要让界面回到最初的状态,本来的想法是把填充点的颜色设为white;把画线的颜色设为white;但是这样并不能覆盖掉之前画的黄色;
+所以采用另一种解决办法:
+先清除canvas的内容;
+然后画出初始的9个圆就可以了
+
+还有待做的:
+1. 手势密码的缓存；
+可以把LineArr中保存的点的id按顺序保存在缓存中,利用localStorage;然后当第二次输密码时,与保存的进行比较,就可以验证密码是否正确
+问题: 
+localStorage只能保存字符串,因此保存的时候需将对象转换成字符串,调JSON.stringify();
+获取的时候取到的也是字符串,调JSON.parse可将其转换为对象
+已解决 
+
+2. 触摸Move回退时，也就是说已访问过的点触发move事件时，要将其最后画出的线删除掉
+
+3. 构成一条直线的3个点应该是同时在LineArr中的,不可能两端在,而中间点不在.但现在还存在这个问题
+ -->
